@@ -6,48 +6,94 @@
   box-sizing: border-box;
 }
 
-/* ---------- Color variables (Light mode = default) ---------- */
+/* ---------- Color variables (Dark glass = default look, matches the
+   animated black background everywhere: dashboard, organizations, etc.) ---------- */
 :root {
+  --bg-page: #14161a;
+  --bg-sidebar: rgba(28, 31, 36, 0.75);
+  --bg-card: rgba(28, 31, 36, 0.75);
+  --bg-topbar: rgba(28, 31, 36, 0.75);
+  --border-color: rgba(0, 229, 255, 0.15);
+  --text-primary: #e8eaed;
+  --text-secondary: #9aa0a6;
+  --link-hover-bg: rgba(0, 229, 255, 0.08);
+  --active-bg: #1a3a5c;
+  --active-color: #8ab4f8;
+  --table-header-bg: rgba(28, 31, 36, 0.85);
+}
+
+/* ---------- Light mode (only if you ever want to flip the toggle back) ---------- */
+body.light-mode {
   --bg-page: #f8f9fa;
-  --bg-sidebar: #ffffff;
-  --bg-card: #ffffff;
-  --bg-topbar: #ffffff;
+  --bg-sidebar: rgba(255, 255, 255, 0.85);
+  --bg-card: rgba(255, 255, 255, 0.85);
+  --bg-topbar: rgba(255, 255, 255, 0.85);
   --border-color: #e8eaed;
   --text-primary: #202124;
   --text-secondary: #5f6368;
   --link-hover-bg: #f1f3f4;
   --active-bg: #e8f0fe;
   --active-color: #1a73e8;
-  --table-header-bg: #ffffff;
+  --table-header-bg: rgba(255, 255, 255, 0.85);
 }
 
-/* ---------- Dark mode overrides ---------- */
-body.dark-mode {
-  --bg-page: #14161a;
-  --bg-sidebar: #1c1f24;
-  --bg-card: #1c1f24;
-  --bg-topbar: #1c1f24;
-  --border-color: #2e3238;
-  --text-primary: #e8eaed;
-  --text-secondary: #9aa0a6;
-  --link-hover-bg: #2a2e34;
-  --active-bg: #1a3a5c;
-  --active-color: #8ab4f8;
-  --table-header-bg: #1c1f24;
+html, body {
+  height: 100%;
 }
 
 body {
   margin: 0;
   font-family: 'Google Sans Text', 'Roboto', -apple-system, sans-serif;
   color: var(--text-primary);
-  background: var(--bg-page) !important;
-  transition: background 0.2s ease, color 0.2s ease;
+  background: #05070d !important;
+  position: relative;
+  transition: color 0.2s ease;
+}
+
+/* Bootstrap's .bg-light utility also has !important, and a class selector
+   beats a plain element selector in specificity — so without this more
+   specific rule, Bootstrap's light-gray background quietly wins on every
+   page that has <body class="bg-light">. */
+body.bg-light {
+  background: #05070d !important;
+}
+
+/* ---------- Black animated background (grid + drifting glow orbs) ---------- */
+/* Same technique as the login page, but done as a fixed body layer so it
+   shows through every page automatically — no HTML edits needed anywhere. */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(0, 229, 255, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 229, 255, 0.05) 1px, transparent 1px),
+    radial-gradient(circle at 12% 18%, rgba(0, 229, 255, 0.30), transparent 40%),
+    radial-gradient(circle at 88% 82%, rgba(124, 77, 255, 0.25), transparent 42%),
+    radial-gradient(circle at 78% 12%, rgba(26, 115, 232, 0.20), transparent 35%);
+  background-size: 40px 40px, 40px 40px, 100% 100%, 100% 100%, 100% 100%;
+  animation: gridMoveBg 20s linear infinite, orbDriftBg 16s ease-in-out infinite alternate;
+}
+
+@keyframes gridMoveBg {
+  0%   { background-position: 0 0, 0 0, 0 0, 0 0, 0 0; }
+  100% { background-position: 40px 40px, 40px 40px, 0 0, 0 0, 0 0; }
+}
+
+@keyframes orbDriftBg {
+  0%   { background-position: 0 0, 0 0, 12% 18%, 88% 82%, 78% 12%; }
+  50%  { background-position: 0 0, 0 0, 18% 26%, 80% 74%, 70% 20%; }
+  100% { background-position: 0 0, 0 0, 12% 18%, 88% 82%, 78% 12%; }
 }
 
 .app-layout {
   display: flex;
   min-height: 100vh;
-  background: var(--bg-page);
+  background: transparent;
+  position: relative;
+  z-index: 1;
 }
 
 /* ---------- Sidebar ---------- */
@@ -55,6 +101,8 @@ body {
 #sidebar {
   width: 256px;
   background: var(--bg-sidebar);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
   border-right: 1px solid var(--border-color);
   display: flex;
   flex-direction: column;
@@ -155,10 +203,13 @@ body.dark-mode .theme-toggle-switch::after {
 .main-content {
   flex: 1;
   overflow-x: auto;
+  background: transparent;
 }
 
 .topbar {
   background: var(--bg-topbar);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
   border-bottom: 1px solid var(--border-color);
   padding: 14px 32px;
   font-size: 1.15rem;
@@ -174,19 +225,21 @@ body.dark-mode .theme-toggle-switch::after {
 
 .card {
   background: var(--bg-card) !important;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
   border: 1px solid var(--border-color) !important;
   border-radius: 12px !important;
-  box-shadow: none !important;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.25) !important;
   color: var(--text-primary);
 }
 
 .card:hover {
-  box-shadow: 0 1px 6px rgba(32,33,36,0.15) !important;
+  box-shadow: 0 4px 30px rgba(0, 229, 255, 0.15) !important;
   transition: box-shadow 0.15s ease;
 }
 
 .card-header {
-  background: var(--bg-card) !important;
+  background: transparent !important;
   color: var(--text-primary) !important;
   border-color: var(--border-color) !important;
 }
@@ -195,6 +248,19 @@ body.dark-mode .theme-toggle-switch::after {
 
 .table {
   color: var(--text-primary);
+  --bs-table-bg: transparent;
+  --bs-table-striped-bg: transparent;
+  --bs-table-hover-bg: var(--link-hover-bg);
+  --bs-table-color: var(--text-primary);
+  --bs-table-striped-color: var(--text-primary);
+  --bs-table-hover-color: var(--text-primary);
+  background: transparent;
+}
+
+.table > :not(caption) > * > * {
+  background-color: transparent;
+  color: var(--text-primary);
+  box-shadow: none;
 }
 
 .table thead th {
@@ -227,6 +293,13 @@ body.dark-mode .list-group-item {
   background: var(--bg-card);
   color: var(--text-primary);
   border-color: var(--border-color);
+}
+
+/* ---------- Muted/secondary text (Bootstrap's .text-muted is too dark
+   to read on dark glass cards, so override it to our secondary color) ---------- */
+
+.text-muted {
+  color: var(--text-secondary) !important;
 }
 
 /* ---------- Badges ---------- */

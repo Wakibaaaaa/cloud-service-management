@@ -1,5 +1,66 @@
 // js/common.js
-// Shared logic used across every page: login protection, sidebar, logout.
+// Shared logic used across every page: animated background, login protection,
+// sidebar, loading bar, logout, and table/card search.
+
+// ---------- Inject the animated grid + glowing orbs into every page ----------
+(function injectAnimatedBackground() {
+  window.addEventListener('DOMContentLoaded', () => {
+    const grid = document.createElement('div');
+    grid.id = 'bgGridOverlay';
+    document.body.prepend(grid);
+
+    ['bg-orb-1', 'bg-orb-2', 'bg-orb-3'].forEach(cls => {
+      const orb = document.createElement('div');
+      orb.className = 'bg-orb ' + cls;
+      document.body.prepend(orb);
+    });
+
+    // Restore the person's "reduce motion" preference, if they set one before
+    if (localStorage.getItem('reduceMotion') === 'true') {
+      document.body.classList.add('reduce-motion');
+    }
+  });
+})();
+
+function toggleMotion() {
+  document.body.classList.toggle('reduce-motion');
+  const isReduced = document.body.classList.contains('reduce-motion');
+  localStorage.setItem('reduceMotion', isReduced);
+
+  const toggleSwitch = document.getElementById('motionToggleSwitch');
+  if (toggleSwitch) {
+    toggleSwitch.classList.toggle('active', !isReduced);
+  }
+}
+
+// ---------- Top loading bar: auto-wraps every fetch() call on every page ----------
+(function setupLoadingBar() {
+  const bar = document.createElement('div');
+  bar.id = 'topLoadingBar';
+  document.addEventListener('DOMContentLoaded', () => document.body.prepend(bar));
+
+  let activeRequests = 0;
+
+  function showBar() {
+    activeRequests++;
+    const el = document.getElementById('topLoadingBar');
+    if (el) el.classList.add('active');
+  }
+
+  function hideBar() {
+    activeRequests = Math.max(0, activeRequests - 1);
+    if (activeRequests === 0) {
+      const el = document.getElementById('topLoadingBar');
+      if (el) el.classList.remove('active');
+    }
+  }
+
+  const originalFetch = window.fetch;
+  window.fetch = function (...args) {
+    showBar();
+    return originalFetch.apply(this, args).finally(hideBar);
+  };
+})();
 
 function requireLogin() {
   const currentUser = JSON.parse(localStorage.getItem('currentUser'));
@@ -30,11 +91,16 @@ function renderSidebar(activePage) {
 
   const currentUser = JSON.parse(localStorage.getItem('currentUser')) || {};
   const pageTitle = links.find(l => l.page === activePage)?.label || '';
+  const motionIsOn = !document.body.classList.contains('reduce-motion');
 
   document.getElementById('sidebar').innerHTML = `
-    <div class="sidebar-brand"><i class="bi bi-cloud-fill"></i> Cloud Manager</div>
+    <div class="sidebar-brand"><i class="bi bi-cloud-fill"></i> CLOUD MANAGER</div>
     <div class="sidebar-links">${linksHtml}</div>
     <div class="sidebar-footer">
+      <div class="theme-toggle" onclick="toggleMotion()">
+        <span><i class="bi bi-stars"></i> Animations</span>
+        <span class="theme-toggle-switch ${motionIsOn ? 'active' : ''}" id="motionToggleSwitch"></span>
+      </div>
       <div class="fw-semibold" style="font-size:0.85rem;">${currentUser.full_name ?? ''}</div>
       <div class="text-muted mb-2" style="font-size:0.78rem;">${currentUser.role_name ?? ''}</div>
       <button onclick="logout()" class="btn btn-sm btn-outline-secondary w-100"><i class="bi bi-box-arrow-right"></i> Log Out</button>
@@ -53,32 +119,24 @@ function logout() {
   window.location.href = 'login.html';
 }
 
-// Filters <tr> rows inside a table body based on text typed into a search box.
 function enableTableSearch(inputId, tableBodyId) {
   const input = document.getElementById(inputId);
   if (!input) return;
-
   input.addEventListener('input', () => {
     const query = input.value.toLowerCase();
-    const rows = document.querySelectorAll(`#${tableBodyId} tr`);
-    rows.forEach(row => {
-      const text = row.textContent.toLowerCase();
-      row.style.display = text.includes(query) ? '' : 'none';
+    document.querySelectorAll(`#${tableBodyId} tr`).forEach(row => {
+      row.style.display = row.textContent.toLowerCase().includes(query) ? '' : 'none';
     });
   });
 }
 
-// Same idea, but for card-based layouts (like the Plans page) instead of table rows.
 function enableCardSearch(inputId, containerId, cardSelector) {
   const input = document.getElementById(inputId);
   if (!input) return;
-
   input.addEventListener('input', () => {
     const query = input.value.toLowerCase();
-    const cards = document.querySelectorAll(`#${containerId} ${cardSelector}`);
-    cards.forEach(card => {
-      const text = card.textContent.toLowerCase();
-      card.style.display = text.includes(query) ? '' : 'none';
+    document.querySelectorAll(`#${containerId} ${cardSelector}`).forEach(card => {
+      card.style.display = card.textContent.toLowerCase().includes(query) ? '' : 'none';
     });
   });
 }
